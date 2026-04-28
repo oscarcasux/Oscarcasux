@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html>
+<head>
+<style>
+body { margin: 0; background: #fff; }
+canvas { display: block; width: 100vw; }
+#status { position: fixed; top: 0; left: 0; background: rgba(0,0,0,0.7); color: #fff; padding: 4px 8px; font-family: monospace; font-size: 12px; z-index: 999; }
+</style>
+</head>
+<body>
+<div id="status">Loading PDF...</div>
+<canvas id="pageCanvas"></canvas>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js"></script>
+<script>
+pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.worker.min.js';
+
+let pdf, currentPage = 1, totalPages = 0;
+
+async function init() {
+  const response = await fetch('uploads/oscar c folio 2026.pdf');
+  const buf = await response.arrayBuffer();
+  pdf = await pdfjsLib.getDocument({data: buf}).promise;
+  totalPages = pdf.numPages;
+  document.getElementById('status').textContent = `PDF: ${totalPages} pages`;
+  await showPage(1);
+}
+
+async function showPage(n) {
+  const page = await pdf.getPage(n);
+  const scale = window.innerWidth / page.getViewport({scale:1}).width;
+  const viewport = page.getViewport({scale});
+  const canvas = document.getElementById('pageCanvas');
+  canvas.width = viewport.width;
+  canvas.height = viewport.height;
+  canvas.style.height = viewport.height + 'px';
+  await page.render({canvasContext: canvas.getContext('2d'), viewport}).promise;
+  document.getElementById('status').textContent = `Page ${n}/${totalPages}`;
+  currentPage = n;
+}
+
+window.goToPage = showPage;
+window.getTotal = () => totalPages;
+
+init();
+</script>
+</body>
+</html>
